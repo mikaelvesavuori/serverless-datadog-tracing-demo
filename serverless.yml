@@ -1,0 +1,52 @@
+service: serverless-datadog-tracing-demo
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  stage: ${opt:stage, 'dev'}
+  region: ${opt:region, 'eu-north-1'}
+  memorySize: ${opt:memory, 256}
+  timeout: 10
+  logRetentionInDays: 7
+  versionFunctions: false
+  deploymentBucket:
+    blockPublicAccess: true
+    maxPreviousDeploymentArtifacts: 5
+    serverSideEncryption: AES256
+  stackTags:
+    Usage: ${self:service}
+  tags:
+    Usage: ${self:service}
+  apiGateway:
+    minimumCompressionSize: 1024
+
+plugins:
+  - serverless-plugin-datadog
+  - serverless-esbuild
+  - serverless-offline
+  - serverless-iam-roles-per-function
+
+package:
+  individually: true
+
+custom:
+  esbuild:
+    exclude: ["dd-trace", "datadog-lambda-js", "aws-sdk"]
+  datadog:
+    site: datadoghq.eu
+    apiKey: abc123 # TODO: Set your own key here
+    addLayers: true
+    env: dev
+    service: serverless-datadog-tracing-demo
+    version: v1.0.0
+    tags: "team:demo,project:serverless-datadog-tracing-demo"
+
+functions:
+  Greeter:
+    handler: src/handler.handler
+    description: Greeting demo
+    events:
+      - http:
+          method: GET
+          path: /greet
+          cors: true
